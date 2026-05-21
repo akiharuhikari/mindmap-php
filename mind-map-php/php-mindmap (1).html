@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHP Mind Map Interaktif</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c14;
+    --bg2: #10131f;
+    --bg3: #161928;
+    --surface: #1c2035;
+    --border: #2a2f4a;
+    --text: #e8eaf6;
+    --muted: #6b7299;
+    --accent: #7c6af7;
+
+    --c1: #7c6af7; /* purple - pengertian */
+    --c2: #2dd4a0; /* teal - sintaks */
+    --c3: #f5a623; /* amber - variabel */
+    --c4: #5dd85a; /* green - kelebihan */
+    --c5: #f06292; /* pink - struktur */
+    --c6: #42aff5; /* blue - penggunaan */
+    --c7: #ff7043; /* coral - OOP */
+    --c0: #7c6af7; /* center */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── STAR FIELD ─── */
+  #stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 75%, rgba(255,255,255,.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 40%, rgba(255,255,255,.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 85%, rgba(255,255,255,.15) 0%, transparent 100%),
+      radial-gradient(1px 1px at 48% 48%, rgba(255,255,255,.1) 0%, transparent 100%);
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: relative; z-index: 10;
+    padding: 2rem 2.5rem 1rem;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(10,12,20,.95) 0%, transparent 100%);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .logo-badge {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--c1), #4a3bb5);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: .75rem; font-weight: 700; color: #fff;
+    letter-spacing: -.5px;
+    box-shadow: 0 0 24px rgba(124,106,247,.4);
+  }
+  .logo-text { line-height: 1; }
+  .logo-text h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -.5px; }
+  .logo-text span { font-size: .75rem; color: var(--muted); font-family: 'Space Mono', monospace; }
+  .header-hint {
+    font-size: .72rem; color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    display: flex; align-items: center; gap: .5rem;
+    border: 1px solid var(--border);
+    padding: .35rem .75rem; border-radius: 20px;
+    background: var(--bg2);
+  }
+  .header-hint::before { content: '◉'; color: var(--c1); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ─── LAYOUT ─── */
+  .container {
+    display: flex; gap: 0;
+    height: calc(100vh - 70px);
+    position: relative; z-index: 5;
+  }
+
+  /* ─── CANVAS AREA ─── */
+  #canvas-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+  }
+  #canvas-area:active { cursor: grabbing; }
+  #canvas-area.node-hover { cursor: pointer; }
+
+  #canvas {
+    position: absolute;
+    width: 2400px; height: 2400px;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  /* SVG connectors */
+  #svg-lines {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* ─── NODES ─── */
+  .node {
+    position: absolute;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+    user-select: none;
+  }
+  .node:hover { transform: scale(1.06) !important; z-index: 100; }
+
+  .node-inner {
+    padding: .65rem 1.1rem;
+    border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: .18rem;
+    text-align: center;
+    border: 1px solid transparent;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+  .node-inner::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 12px;
+    opacity: .08;
+    background: inherit;
+  }
+
+  .node-icon {
+    font-size: 1.3rem;
+    margin-bottom: .1rem;
+    line-height: 1;
+  }
+  .node-title {
+    font-size: .8rem;
+    font-weight: 800;
+    letter-spacing: .3px;
+    white-space: nowrap;
+  }
+  .node-sub {
+    font-size: .62rem;
+    font-family: 'Space Mono', monospace;
+    opacity: .65;
+    white-space: nowrap;
+  }
+
+  /* CENTER */
+  .node-center .node-inner {
+    padding: 1.1rem 1.8rem;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #1a1740, #251e5e);
+    border-color: var(--c0);
+    box-shadow: 0 0 50px rgba(124,106,247,.35), inset 0 0 30px rgba(124,106,247,.08);
+  }
+  .node-center .node-title { font-size: 1rem; color: #c5baff; letter-spacing: 1px; }
+  .node-center .node-sub { font-size: .7rem; color: #8b80cc; }
+  .node-center .node-icon { font-size: 1.6rem; }
+
+  /* BRANCH */
+  .node-branch .node-inner {
+    min-width: 140px;
+    border-radius: 14px;
+  }
+
+  /* LEAF */
+  .node-leaf .node-inner {
+    min-width: 110px;
+    border-radius: 10px;
+    padding: .5rem .9rem;
+  }
+  .node-leaf .node-title { font-size: .7rem; white-space: normal; line-height: 1.3; }
+  .node-leaf .node-sub { font-size: .58rem; }
+
+  /* COLORS per branch */
+  .b1 .node-inner { background: rgba(124,106,247,.12); border-color: rgba(124,106,247,.4); color: #c5baff; }
+  .b1:hover .node-inner { box-shadow: 0 0 30px rgba(124,106,247,.4); }
+  .b2 .node-inner { background: rgba(45,212,160,.1); border-color: rgba(45,212,160,.4); color: #9efcdb; }
+  .b2:hover .node-inner { box-shadow: 0 0 30px rgba(45,212,160,.35); }
+  .b3 .node-inner { background: rgba(245,166,35,.1); border-color: rgba(245,166,35,.4); color: #ffd580; }
+  .b3:hover .node-inner { box-shadow: 0 0 30px rgba(245,166,35,.35); }
+  .b4 .node-inner { background: rgba(93,216,90,.1); border-color: rgba(93,216,90,.4); color: #b3f5b2; }
+  .b4:hover .node-inner { box-shadow: 0 0 30px rgba(93,216,90,.35); }
+  .b5 .node-inner { background: rgba(240,98,146,.1); border-color: rgba(240,98,146,.4); color: #ffb3cc; }
+  .b5:hover .node-inner { box-shadow: 0 0 30px rgba(240,98,146,.35); }
+  .b6 .node-inner { background: rgba(66,175,245,.1); border-color: rgba(66,175,245,.4); color: #a8d8ff; }
+  .b6:hover .node-inner { box-shadow: 0 0 30px rgba(66,175,245,.35); }
+  .b7 .node-inner { background: rgba(255,112,67,.1); border-color: rgba(255,112,67,.4); color: #ffbe9f; }
+  .b7:hover .node-inner { box-shadow: 0 0 30px rgba(255,112,67,.35); }
+
+  /* ─── PANEL ─── */
+  #panel {
+    width: 340px;
+    min-width: 340px;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transition: width .35s cubic-bezier(.4,0,.2,1);
+  }
+  #panel.collapsed { width: 0; min-width: 0; }
+
+  .panel-header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .panel-close {
+    position: absolute; top: 1.25rem; right: 1.25rem;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 8px;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: .9rem;
+    transition: color .2s, background .2s;
+  }
+  .panel-close:hover { color: var(--text); background: var(--border); }
+  .panel-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: .62rem; letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: .5rem;
+    opacity: .6;
+  }
+  .panel-title {
+    font-size: 1.3rem; font-weight: 800; line-height: 1.1;
+  }
+  .panel-subtitle {
+    font-size: .75rem; color: var(--muted);
+    font-family: 'Space Mono', monospace; margin-top: .3rem;
+  }
+  #panel-color-bar {
+    height: 3px; border-radius: 0;
+    transition: background .3s;
+    flex-shrink: 0;
+  }
+
+  .panel-body {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto; flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .panel-section { margin-bottom: 1.5rem; }
+  .panel-section-label {
+    font-size: .62rem; font-family: 'Space Mono', monospace;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: .75rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .panel-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .detail-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    margin-bottom: .6rem;
+    transition: border-color .2s, background .2s;
+  }
+  .detail-item:hover { border-color: var(--muted); background: #1f2540; }
+  .detail-item-title {
+    font-size: .78rem; font-weight: 600; margin-bottom: .25rem;
+  }
+  .detail-item-desc {
+    font-size: .7rem; color: var(--muted); line-height: 1.5;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .code-block {
+    background: #0d0f1a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: .68rem;
+    line-height: 1.7;
+    color: #a0aec0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .kw  { color: #7c6af7; }
+  .code-block .fn  { color: #2dd4a0; }
+  .code-block .str { color: #f5a623; }
+  .code-block .cmt { color: #4a5280; font-style: italic; }
+  .code-block .var { color: #f06292; }
+  .code-block .num { color: #42aff5; }
+
+  /* ─── DEFAULT PANEL STATE ─── */
+  #panel-default {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem 1.5rem; flex: 1; text-align: center;
+  }
+  #panel-default .big-icon { font-size: 3rem; margin-bottom: 1rem; opacity: .4; }
+  #panel-default p { font-size: .8rem; color: var(--muted); line-height: 1.7; }
+
+  /* ─── CONTROLS ─── */
+  #controls {
+    position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; gap: .5rem; z-index: 20;
+  }
+  .ctrl-btn {
+    background: var(--bg2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 1rem;
+    transition: background .2s, border-color .2s, transform .15s;
+    backdrop-filter: blur(10px);
+  }
+  .ctrl-btn:hover { background: var(--surface); border-color: var(--muted); transform: translateY(-1px); }
+  .ctrl-btn:active { transform: translateY(1px); }
+
+  /* ─── LEGEND ─── */
+  #legend {
+    position: absolute; top: 1rem; left: 1rem; z-index: 20;
+    background: rgba(16,19,31,.85);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: .8rem 1rem;
+    backdrop-filter: blur(12px);
+    display: flex; flex-direction: column; gap: .45rem;
+  }
+  .legend-title {
+    font-size: .6rem; font-family: 'Space Mono', monospace;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    margin-bottom: .2rem;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .68rem; cursor: pointer;
+    padding: .2rem .3rem; border-radius: 6px;
+    transition: background .2s;
+  }
+  .legend-item:hover { background: rgba(255,255,255,.05); }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ─── ENTER ANIMATIONS ─── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .node { animation: fadeInUp .5s cubic-bezier(.4,0,.2,1) both; }
+
+  /* ─── TOOLTIP ─── */
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 9999;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: .45rem .75rem;
+    font-size: .68rem; color: var(--text);
+    font-family: 'Space Mono', monospace;
+    opacity: 0; transform: translateY(4px);
+    transition: opacity .15s, transform .15s;
+    white-space: nowrap;
+  }
+  #tooltip.show { opacity: 1; transform: translateY(0); }
+
+  /* ─── SCROLLBARS ─── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* GLOW ring on active node */
+  .node.active-node .node-inner { outline: 2px solid white; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="stars"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-badge">PHP</div>
+    <div class="logo-text">
+      <h1>PHP Mind Map</h1>
+      <span>Peta Konsep Interaktif</span>
+    </div>
+  </div>
+  <div class="header-hint">Klik node untuk melihat detail</div>
+</header>
+
+<div class="container">
+  <div id="canvas-area">
+    <svg id="svg-lines" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;"></svg>
+    <div id="canvas"></div>
+
+    <div id="legend">
+      <div class="legend-title">Topik</div>
+      <div class="legend-item" data-branch="b1"><div class="legend-dot" style="background:#7c6af7"></div>Pengertian</div>
+      <div class="legend-item" data-branch="b2"><div class="legend-dot" style="background:#2dd4a0"></div>Sintaks Dasar</div>
+      <div class="legend-item" data-branch="b3"><div class="legend-dot" style="background:#f5a623"></div>Variabel &amp; Tipe Data</div>
+      <div class="legend-item" data-branch="b4"><div class="legend-dot" style="background:#5dd85a"></div>Kelebihan</div>
+      <div class="legend-item" data-branch="b5"><div class="legend-dot" style="background:#f06292"></div>Struktur</div>
+      <div class="legend-item" data-branch="b6"><div class="legend-dot" style="background:#42aff5"></div>Penggunaan</div>
+      <div class="legend-item" data-branch="b7"><div class="legend-dot" style="background:#ff7043"></div>OOP dalam PHP</div>
+    </div>
+
+    <div id="controls">
+      <button class="ctrl-btn" id="zoom-out" title="Perkecil">−</button>
+      <button class="ctrl-btn" id="zoom-reset" title="Reset" style="font-size:.65rem;width:56px;font-family:'Space Mono',monospace;">100%</button>
+      <button class="ctrl-btn" id="zoom-in" title="Perbesar">+</button>
+      <button class="ctrl-btn" id="fit-btn" title="Sesuaikan Layar">⊡</button>
+    </div>
+  </div>
+
+  <div id="panel">
+    <div id="panel-color-bar"></div>
+    <div id="panel-header" class="panel-header" style="display:none">
+      <div class="panel-tag" id="panel-tag">—</div>
+      <div class="panel-title" id="panel-title">—</div>
+      <div class="panel-subtitle" id="panel-subtitle">—</div>
+      <button class="panel-close" id="panel-close">✕</button>
+    </div>
+    <div id="panel-default">
+      <div class="big-icon">🗺️</div>
+      <p>Klik salah satu node pada mind map untuk melihat penjelasan detail, contoh kode, dan informasi tambahan.</p>
+      <p style="margin-top:1rem;font-size:.68rem;">Gunakan scroll atau drag untuk navigasi. Gunakan tombol +/- untuk zoom.</p>
+    </div>
+    <div class="panel-body" id="panel-body" style="display:none"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const CENTER = { id:'center', x:1180, y:1100, w:180, h:70, cls:'node-center', label:'PHP', sub:'Hypertext Preprocessor', icon:'🐘' };
+
+const BRANCHES = [
+  {
+    id:'b1', cls:'b1', color:'#7c6af7',
+    label:'Pengertian', sub:'Apa itu PHP?', icon:'📖',
+    x:780, y:680, w:160, h:70,
+    detail:{
+      tag:'KONSEP DASAR', title:'Pengertian PHP',
+      subtitle:'Sejarah & definisi bahasa',
+      icon:'📖',
+      sections:[
+        { label:'Definisi', items:[
+          { title:'PHP: Hypertext Preprocessor', desc:'Bahasa pemrograman scripting server-side yang dirancang untuk pengembangan web dinamis dan dapat disisipkan ke dalam HTML.' },
+          { title:'Open Source', desc:'PHP didistribusikan secara gratis di bawah PHP License dan dikembangkan oleh komunitas global.' },
+        ]},
+        { label:'Sejarah', items:[
+          { title:'1994 — Lahir', desc:'Dibuat oleh Rasmus Lerdorf sebagai sekumpulan skrip CGI untuk melacak kunjungan CV online-nya. Awalnya disebut "Personal Home Page."' },
+          { title:'1997 — PHP 3', desc:'Zeev Suraski & Andi Gutmans menulis ulang parser PHP. Kepanjangan diubah menjadi "PHP: Hypertext Preprocessor."' },
+          { title:'2000 — PHP 4 & 5', desc:'Memperkenalkan Zend Engine 2.0 dan dukungan OOP yang jauh lebih kuat.' },
+          { title:'2015+ — PHP 7/8', desc:'Peningkatan performa drastis (2× lebih cepat dari PHP 5), JIT compiler (PHP 8), dan banyak fitur modern.' },
+        ]},
+        { label:'Cara kerja', items:[
+          { title:'Server-side Execution', desc:'Kode PHP dieksekusi di server web (Apache/Nginx), hasilnya berupa HTML yang dikirim ke browser klien.' },
+        ]},
+        { label:'Contoh Kode', code:`<span class="cmt">// File: index.php</span>
+<span class="kw">&lt;?php</span>
+  <span class="var">$nama</span> = <span class="str">"Dunia"</span>;
+  <span class="kw">echo</span> <span class="str">"Halo, "</span> . <span class="var">$nama</span> . <span class="str">"!"</span>;
+<span class="kw">?&gt;</span>
+<span class="cmt">// Output: Halo, Dunia!</span>` }
+      ]
+    },
+    leaves:[
+      { id:'b1l1', x:560, y:540, w:148, h:52, cls:'b1', label:'Server-side', sub:'Berjalan di server', icon:'🖥️' },
+      { id:'b1l2', x:720, y:490, w:148, h:52, cls:'b1', label:'Rasmus Lerdorf', sub:'Diciptakan 1994', icon:'👤' },
+      { id:'b1l3', x:880, y:480, w:148, h:52, cls:'b1', label:'Open Source', sub:'Gratis & bebas', icon:'🔓' },
+      { id:'b1l4', x:580, y:680, w:148, h:52, cls:'b1', label:'Versi PHP 8', sub:'Terbaru & modern', icon:'⚡' },
+    ]
+  },
+  {
+    id:'b2', cls:'b2', color:'#2dd4a0',
+    label:'Sintaks Dasar', sub:'Cara menulis PHP', icon:'✍️',
+    x:1050, y:640, w:160, h:70,
+    detail:{
+      tag:'SINTAKS', title:'Sintaks Dasar PHP',
+      subtitle:'Aturan penulisan kode PHP',
+      icon:'✍️',
+      sections:[
+        { label:'Tag PHP', items:[
+          { title:'Tag Pembuka & Penutup', desc:'Kode PHP ditulis di antara tag <?php dan ?>. Tag penutup opsional jika file hanya berisi PHP.' },
+          { title:'Short Echo Tag', desc:'<?= $variabel ?> adalah singkatan dari <?php echo $variabel ?>, memudahkan output cepat di template.' },
+        ]},
+        { label:'Aturan Dasar', items:[
+          { title:'Titik Koma (;)', desc:'Setiap pernyataan PHP diakhiri dengan titik koma. Lupa titik koma adalah penyebab error paling umum.' },
+          { title:'Case Sensitivity', desc:'Nama variabel bersifat case-sensitive ($Nama ≠ $nama). Namun nama fungsi dan keyword tidak case-sensitive.' },
+          { title:'Whitespace', desc:'PHP mengabaikan spasi, tab, dan baris kosong di antara pernyataan. Gunakan untuk keterbacaan kode.' },
+        ]},
+        { label:'Komentar', items:[
+          { title:'Single Line: // dan #', desc:'Digunakan untuk komentar satu baris. Semua teks setelah // atau # pada baris itu diabaikan.' },
+          { title:'Multi-line: /* ... */', desc:'Digunakan untuk komentar lebih dari satu baris atau dokumentasi fungsi (DocBlock).' },
+        ]},
+        { label:'Contoh Sintaks', code:`<span class="kw">&lt;?php</span>
+<span class="cmt">// Komentar satu baris</span>
+<span class="cmt"># Juga komentar satu baris</span>
+
+<span class="cmt">/*
+ * Komentar
+ * multi-baris
+ */</span>
+
+<span class="kw">echo</span> <span class="str">"Hello World"</span>;   <span class="cmt">// wajib ada ;</span>
+<span class="kw">print</span> <span class="str">"Selamat datang"</span>;
+
+<span class="cmt">// Short echo (di HTML template)</span>
+<span class="kw">&lt;?=</span> <span class="var">$nama</span> <span class="kw">?&gt;</span>` }
+      ]
+    },
+    leaves:[
+      { id:'b2l1', x:890, y:490, w:148, h:52, cls:'b2', label:'<?php ?>', sub:'Tag pembuka/penutup', icon:'🏷️' },
+      { id:'b2l2', x:1060, y:460, w:148, h:52, cls:'b2', label:'Titik Koma', sub:'Akhir setiap baris', icon:'⛔' },
+      { id:'b2l3', x:1220, y:470, w:148, h:52, cls:'b2', label:'Komentar', sub:'//, #, /* */', icon:'💬' },
+      { id:'b2l4', x:1040, y:555, w:148, h:52, cls:'b2', label:'echo & print', sub:'Menampilkan output', icon:'📤' },
+    ]
+  },
+  {
+    id:'b3', cls:'b3', color:'#f5a623',
+    label:'Variabel & Tipe Data', sub:'Menyimpan nilai', icon:'📦',
+    x:1400, y:680, w:172, h:70,
+    detail:{
+      tag:'DATA', title:'Variabel & Tipe Data',
+      subtitle:'Cara menyimpan dan mengelola data',
+      icon:'📦',
+      sections:[
+        { label:'Variabel', items:[
+          { title:'Pendeklarasian dengan $', desc:'Semua variabel PHP diawali dengan tanda dollar ($). Tidak perlu deklarasi tipe data secara eksplisit.' },
+          { title:'Aturan Penamaan', desc:'Harus diawali huruf atau underscore (_). Tidak boleh diawali angka. Bersifat case-sensitive.' },
+          { title:'Variabel Variabel', desc:'PHP mendukung variabel variabel: $$var, di mana nilai sebuah variabel menjadi nama variabel lain.' },
+        ]},
+        { label:'Tipe Data Skalar', items:[
+          { title:'String', desc:'Urutan karakter. Ditulis dengan tanda kutip tunggal (\') atau ganda ("). Mendukung heredoc dan nowdoc.' },
+          { title:'Integer', desc:'Bilangan bulat tanpa desimal. Bisa ditulis dalam desimal, oktal (0x), heksadesimal (0xFF), atau biner (0b).' },
+          { title:'Float / Double', desc:'Bilangan pecahan (desimal). Contoh: 3.14, 1.5e3, 7E-10.' },
+          { title:'Boolean', desc:'Nilai true atau false (tidak case-sensitive). Digunakan untuk kondisi logika.' },
+        ]},
+        { label:'Tipe Data Kompleks', items:[
+          { title:'Array', desc:'Kumpulan nilai terindeks atau asosiatif. PHP mendukung array multidimensi dan banyak fungsi array bawaan.' },
+          { title:'Object', desc:'Instance dari sebuah class. Menggabungkan data (properti) dan perilaku (metode).' },
+          { title:'NULL', desc:'Variabel tanpa nilai. Terjadi saat variabel dideklarasikan tanpa nilai atau di-set ke null.' },
+          { title:'Resource', desc:'Referensi ke sumber daya eksternal seperti koneksi database, file handle, atau koneksi cURL.' },
+        ]},
+        { label:'Contoh Kode', code:`<span class="kw">&lt;?php</span>
+<span class="var">$nama</span>   = <span class="str">"Budi"</span>;          <span class="cmt">// string</span>
+<span class="var">$umur</span>   = <span class="num">25</span>;             <span class="cmt">// integer</span>
+<span class="var">$tinggi</span> = <span class="num">1.75</span>;           <span class="cmt">// float</span>
+<span class="var">$aktif</span>  = <span class="kw">true</span>;           <span class="cmt">// boolean</span>
+<span class="var">$kosong</span> = <span class="kw">null</span>;           <span class="cmt">// null</span>
+
+<span class="var">$buah</span> = [<span class="str">"apel"</span>, <span class="str">"mangga"</span>, <span class="str">"jeruk"</span>]; <span class="cmt">// array</span>
+
+<span class="cmt">// Cek tipe data</span>
+<span class="fn">var_dump</span>(<span class="var">$nama</span>);     <span class="cmt">// string(4) "Budi"</span>
+<span class="fn">gettype</span>(<span class="var">$umur</span>);     <span class="cmt">// "integer"</span>` }
+      ]
+    },
+    leaves:[
+      { id:'b3l1', x:1400, y:490, w:148, h:52, cls:'b3', label:'$variabel', sub:'Awalan tanda dollar', icon:'💲' },
+      { id:'b3l2', x:1560, y:510, w:148, h:52, cls:'b3', label:'String & Int', sub:'Tipe data skalar', icon:'🔤' },
+      { id:'b3l3', x:1620, y:650, w:148, h:52, cls:'b3', label:'Array', sub:'Kumpulan data', icon:'📋' },
+      { id:'b3l4', x:1550, y:760, w:148, h:52, cls:'b3', label:'NULL & Bool', sub:'Tipe khusus', icon:'❓' },
+    ]
+  },
+  {
+    id:'b4', cls:'b4', color:'#5dd85a',
+    label:'Kelebihan', sub:'Keunggulan PHP', icon:'🏆',
+    x:1530, y:1050, w:150, h:70,
+    detail:{
+      tag:'KEUNGGULAN', title:'Kelebihan PHP',
+      subtitle:'Mengapa memilih PHP?',
+      icon:'🏆',
+      sections:[
+        { label:'Kemudahan', items:[
+          { title:'Mudah Dipelajari', desc:'Sintaks PHP sederhana dan mirip C/Java, sehingga pemula dapat dengan cepat memahami dan mulai membuat halaman web dinamis.' },
+          { title:'Dokumentasi Lengkap', desc:'php.net menyediakan dokumentasi resmi yang sangat lengkap, disertai contoh kode dan komentar komunitas.' },
+        ]},
+        { label:'Ekosistem', items:[
+          { title:'Komunitas Besar', desc:'Jutaan developer PHP di seluruh dunia. Mudah menemukan solusi, library, tutorial, dan tenaga kerja.' },
+          { title:'Composer & Packagist', desc:'Manajer paket Composer memudahkan pengelolaan dependensi. Packagist memiliki lebih dari 350.000 paket siap pakai.' },
+          { title:'Framework Populer', desc:'Laravel (MVC modern), Symfony (enterprise), CodeIgniter (ringan), Yii2, dan CakePHP tersedia untuk mempercepat pengembangan.' },
+        ]},
+        { label:'Teknis', items:[
+          { title:'Cross-Platform', desc:'Berjalan di Linux, Windows, macOS. Kompatibel dengan Apache, Nginx, IIS, dan berbagai web server lainnya.' },
+          { title:'Performa PHP 8', desc:'PHP 8 dengan JIT Compiler meningkatkan performa hingga 2-3× dibanding PHP 7. Cocok untuk aplikasi high-traffic.' },
+          { title:'Integrasi Database', desc:'Mendukung MySQL, PostgreSQL, SQLite, MongoDB, Redis, dan hampir semua sistem database melalui PDO.' },
+          { title:'Gratis & Open Source', desc:'Tidak ada biaya lisensi. Kode sumber terbuka di github.com/php/php-src.' },
+        ]},
+      ]
+    },
+    leaves:[
+      { id:'b4l1', x:1620, y:880, w:148, h:52, cls:'b4', label:'Mudah Dipelajari', sub:'Ramah pemula', icon:'🎓' },
+      { id:'b4l2', x:1640, y:980, w:148, h:52, cls:'b4', label:'Open Source', sub:'Gratis selamanya', icon:'🆓' },
+      { id:'b4l3', x:1630, y:1090, w:148, h:52, cls:'b4', label:'Cross-Platform', sub:'Linux/Win/Mac', icon:'💻' },
+      { id:'b4l4', x:1580, y:1190, w:148, h:52, cls:'b4', label:'Komunitas Besar', sub:'Jutaan developer', icon:'👥' },
+    ]
+  },
+  {
+    id:'b5', cls:'b5', color:'#f06292',
+    label:'Struktur', sub:'Alur program PHP', icon:'🔀',
+    x:1390, y:1460, w:150, h:70,
+    detail:{
+      tag:'STRUKTUR', title:'Struktur Program',
+      subtitle:'Percabangan, perulangan, dan fungsi',
+      icon:'🔀',
+      sections:[
+        { label:'Percabangan', items:[
+          { title:'if / else / elseif', desc:'Mengeksekusi blok kode berdasarkan kondisi boolean. Bisa bertingkat (nested if).' },
+          { title:'switch / case', desc:'Alternatif if-elseif untuk membandingkan satu variabel dengan banyak nilai. Lebih bersih untuk kasus ganda.' },
+          { title:'match (PHP 8)', desc:'Ekspresi match mirip switch tapi lebih ketat (strict comparison), setiap arm mengembalikan nilai.' },
+          { title:'Ternary & Null Coalescing', desc:'$x = cond ? "ya" : "tidak" dan $y = $a ?? "default" untuk kondisi ringkas.' },
+        ]},
+        { label:'Perulangan', items:[
+          { title:'for', desc:'Perulangan dengan penghitung. for($i=0; $i<10; $i++){ ... } — cocok saat jumlah iterasi diketahui.' },
+          { title:'while', desc:'Berulang selama kondisi true. Kondisi diperiksa sebelum eksekusi blok.' },
+          { title:'do...while', desc:'Seperti while, tapi blok dieksekusi minimal satu kali sebelum kondisi diperiksa.' },
+          { title:'foreach', desc:'Khusus untuk iterasi array dan objek. foreach($arr as $key => $val){ ... }' },
+        ]},
+        { label:'Fungsi', items:[
+          { title:'function', desc:'Mendefinisikan blok kode yang dapat dipanggil ulang. Mendukung parameter default dan type hints.' },
+          { title:'return', desc:'Mengembalikan nilai dari fungsi. PHP 7+ mendukung deklarasi tipe kembalian (:int, :string, :array, dll).' },
+          { title:'Arrow Function (PHP 7.4)', desc:'Fungsi anonim ringkas: fn($x) => $x * 2. Secara otomatis menangkap variabel scope luar.' },
+        ]},
+        { label:'Contoh Kode', code:`<span class="kw">&lt;?php</span>
+<span class="cmt">// Percabangan</span>
+<span class="kw">if</span> (<span class="var">$nilai</span> >= <span class="num">80</span>) {
+    <span class="kw">echo</span> <span class="str">"Lulus"</span>;
+} <span class="kw">elseif</span> (<span class="var">$nilai</span> >= <span class="num">60</span>) {
+    <span class="kw">echo</span> <span class="str">"Cukup"</span>;
+} <span class="kw">else</span> {
+    <span class="kw">echo</span> <span class="str">"Tidak Lulus"</span>;
+}
+
+<span class="cmt">// Perulangan foreach</span>
+<span class="var">$buah</span> = [<span class="str">"apel"</span>, <span class="str">"mangga"</span>];
+<span class="kw">foreach</span> (<span class="var">$buah</span> <span class="kw">as</span> <span class="var">$item</span>) {
+    <span class="kw">echo</span> <span class="var">$item</span> . <span class="str">"\n"</span>;
+}
+
+<span class="cmt">// Fungsi</span>
+<span class="kw">function</span> <span class="fn">sapa</span>(<span class="kw">string</span> <span class="var">$nama</span>): <span class="kw">string</span> {
+    <span class="kw">return</span> <span class="str">"Halo, "</span> . <span class="var">$nama</span>;
+}` }
+      ]
+    },
+    leaves:[
+      { id:'b5l1', x:1420, y:1590, w:148, h:52, cls:'b5', label:'if / else', sub:'Percabangan', icon:'↔️' },
+      { id:'b5l2', x:1570, y:1560, w:148, h:52, cls:'b5', label:'for / foreach', sub:'Perulangan', icon:'🔁' },
+      { id:'b5l3', x:1590, y:1450, w:148, h:52, cls:'b5', label:'function', sub:'Fungsi & return', icon:'⚙️' },
+      { id:'b5l4', x:1480, y:1680, w:148, h:52, cls:'b5', label:'switch / match', sub:'Kondisi ganda', icon:'🔀' },
+    ]
+  },
+  {
+    id:'b6', cls:'b6', color:'#42aff5',
+    label:'Penggunaan', sub:'Implementasi nyata', icon:'🌐',
+    x:1050, y:1540, w:150, h:70,
+    detail:{
+      tag:'IMPLEMENTASI', title:'Penggunaan PHP',
+      subtitle:'Implementasi nyata di industri',
+      icon:'🌐',
+      sections:[
+        { label:'Web Development', items:[
+          { title:'Website Dinamis', desc:'PHP memproses form, mengelola sesi pengguna, dan menghasilkan konten HTML secara dinamis berdasarkan data dari database.' },
+          { title:'Laravel Framework', desc:'Framework PHP paling populer. MVC pattern, Eloquent ORM, Blade template, Artisan CLI, dan ekosistem yang sangat kaya.' },
+          { title:'WordPress', desc:'CMS paling populer di dunia (43% website menggunakannya) dibangun dengan PHP. Plugin dan tema menggunakan PHP.' },
+        ]},
+        { label:'Backend & API', items:[
+          { title:'REST API', desc:'PHP dapat membangun API RESTful yang melayani aplikasi mobile (Android/iOS) atau frontend JavaScript (React/Vue).' },
+          { title:'JSON & XML', desc:'PHP memiliki fungsi bawaan json_encode(), json_decode(), SimpleXML untuk mengelola format data modern.' },
+          { title:'GraphQL', desc:'Library seperti webonyx/graphql-php memungkinkan pembuatan API GraphQL dengan PHP.' },
+        ]},
+        { label:'Database & Session', items:[
+          { title:'PDO (PHP Data Objects)', desc:'Antarmuka database yang konsisten untuk MySQL, PostgreSQL, SQLite, dan database lainnya. Mendukung prepared statements.' },
+          { title:'Session & Cookie', desc:'PHP mengelola state pengguna melalui $_SESSION (server) dan $_COOKIE (browser). Pondasi sistem login.' },
+          { title:'Autentikasi', desc:'Hashing password dengan password_hash() dan verifikasi password_verify(). Lebih aman dari md5/sha1.' },
+        ]},
+        { label:'Contoh REST API', code:`<span class="kw">&lt;?php</span>
+<span class="cmt">// Contoh endpoint REST API</span>
+<span class="fn">header</span>(<span class="str">'Content-Type: application/json'</span>);
+
+<span class="var">$method</span> = <span class="var">$_SERVER</span>[<span class="str">'REQUEST_METHOD'</span>];
+
+<span class="kw">if</span> (<span class="var">$method</span> === <span class="str">'GET'</span>) {
+    <span class="var">$data</span> = [
+        <span class="str">'status'</span> => <span class="str">'sukses'</span>,
+        <span class="str">'users'</span> => <span class="fn">getUsers</span>()
+    ];
+    <span class="kw">echo</span> <span class="fn">json_encode</span>(<span class="var">$data</span>);
+}` }
+      ]
+    },
+    leaves:[
+      { id:'b6l1', x:860, y:1530, w:148, h:52, cls:'b6', label:'Laravel', sub:'Framework populer', icon:'🏗️' },
+      { id:'b6l2', x:870, y:1620, w:148, h:52, cls:'b6', label:'REST API', sub:'Backend service', icon:'🔌' },
+      { id:'b6l3', x:1020, y:1670, w:148, h:52, cls:'b6', label:'MySQL/PDO', sub:'Koneksi database', icon:'🗄️' },
+      { id:'b6l4', x:1180, y:1660, w:148, h:52, cls:'b6', label:'Session & Cookie', sub:'Manajemen state', icon:'🍪' },
+    ]
+  },
+  {
+    id:'b7', cls:'b7', color:'#ff7043',
+    label:'OOP dalam PHP', sub:'Pemrograman objek', icon:'🧱',
+    x:780, y:1460, w:160, h:70,
+    detail:{
+      tag:'OOP', title:'OOP dalam PHP',
+      subtitle:'Object-Oriented Programming',
+      icon:'🧱',
+      sections:[
+        { label:'Konsep Inti', items:[
+          { title:'Class & Object', desc:'Class adalah blueprint/cetakan. Object adalah instance dari class. Dibuat dengan keyword new.' },
+          { title:'Constructor & Destructor', desc:'__construct() dipanggil saat object dibuat. __destruct() dipanggil saat object dihapus dari memori.' },
+          { title:'Properti & Method', desc:'Properti adalah variabel dalam class. Method adalah fungsi dalam class. Keduanya bisa public, protected, atau private.' },
+        ]},
+        { label:'Pilar OOP', items:[
+          { title:'Encapsulation', desc:'Menyembunyikan detail implementasi. Akses dikontrol via visibility: public (semua), protected (turunan), private (hanya class ini).' },
+          { title:'Inheritance', desc:'Class anak mewarisi properti & method class induk (extends). PHP mendukung single inheritance, tapi bisa menggunakan Traits.' },
+          { title:'Polymorphism', desc:'Method yang sama bisa berperilaku berbeda tergantung object-nya. Implementasi via overriding dan interface.' },
+          { title:'Abstraction', desc:'Abstract class & interface mendefinisikan kontrak yang harus diimplementasikan oleh class turunan.' },
+        ]},
+        { label:'Fitur Modern', items:[
+          { title:'Traits', desc:'Mekanisme reuse kode horizontal. Memecahkan keterbatasan single inheritance. Gunakan keyword use dalam class.' },
+          { title:'Namespace', desc:'Mengelompokkan class untuk menghindari konflik nama. Dasar sistem autoloading PSR-4 dengan Composer.' },
+          { title:'Constructor Promotion (PHP 8)', desc:'Penulisan singkat: function __construct(private string $nama) {} otomatis membuat properti $nama.' },
+        ]},
+        { label:'Contoh Class', code:`<span class="kw">&lt;?php</span>
+<span class="kw">class</span> <span class="fn">Hewan</span> {
+    <span class="kw">public function</span> <span class="fn">__construct</span>(
+        <span class="kw">protected string</span> <span class="var">$nama</span>,
+        <span class="kw">private int</span> <span class="var">$umur</span>
+    ) {}
+
+    <span class="kw">public function</span> <span class="fn">bersuara</span>(): <span class="kw">string</span> {
+        <span class="kw">return</span> <span class="str">"..."</span>;
+    }
+}
+
+<span class="kw">class</span> <span class="fn">Kucing</span> <span class="kw">extends</span> <span class="fn">Hewan</span> {
+    <span class="kw">public function</span> <span class="fn">bersuara</span>(): <span class="kw">string</span> {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="var">nama</span> . <span class="str">": Meow!"</span>;
+    }
+}
+
+<span class="var">$kucing</span> = <span class="kw">new</span> <span class="fn">Kucing</span>(<span class="str">"Tom"</span>, <span class="num">3</span>);
+<span class="kw">echo</span> <span class="var">$kucing</span>-><span class="fn">bersuara</span>();
+<span class="cmt">// Tom: Meow!</span>` }
+      ]
+    },
+    leaves:[
+      { id:'b7l1', x:550, y:1450, w:148, h:52, cls:'b7', label:'Class & Object', sub:'Blueprint & instance', icon:'📐' },
+      { id:'b7l2', x:560, y:1550, w:148, h:52, cls:'b7', label:'Encapsulation', sub:'Sembunyikan detail', icon:'🔒' },
+      { id:'b7l3', x:620, y:1640, w:148, h:52, cls:'b7', label:'Inheritance', sub:'Pewarisan class', icon:'🌳' },
+      { id:'b7l4', x:760, y:1680, w:148, h:52, cls:'b7', label:'Interface & Trait', sub:'Kontrak & reuse', icon:'🤝' },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────
+// RENDER NODES
+// ─────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const svg = document.getElementById('svg-lines');
+
+function nodeCenter(n) {
+  return { x: n.x + n.w/2, y: n.y + n.h/2 };
+}
+
+function createNode(data, delay=0) {
+  const el = document.createElement('div');
+  el.className = `node ${data.cls || ''} ${data.type || 'node-branch'}`;
+  el.id = data.id;
+  el.style.left = data.x + 'px';
+  el.style.top  = data.y + 'px';
+  el.style.width = data.w + 'px';
+  el.style.animationDelay = delay + 'ms';
+
+  let iconHtml = data.icon ? `<div class="node-icon">${data.icon}</div>` : '';
+  let subHtml  = data.sub  ? `<div class="node-sub">${data.sub}</div>`   : '';
+
+  el.innerHTML = `<div class="node-inner">${iconHtml}<div class="node-title">${data.label}</div>${subHtml}</div>`;
+  canvas.appendChild(el);
+  return el;
+}
+
+// Center
+const centerNode = createNode({...CENTER, type:'node-center', cls:'node-center'}, 0);
+
+// Lines helper
+function addLine(x1,y1,x2,y2,color,opacity=0.35,dashed=false){
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+  line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+  line.setAttribute('stroke',color);
+  line.setAttribute('stroke-width','1.5');
+  line.setAttribute('stroke-opacity',opacity);
+  if(dashed) line.setAttribute('stroke-dasharray','5 4');
+  svg.appendChild(line);
+  return line;
+}
+
+function addCurve(x1,y1,x2,y2,color,opacity=0.35){
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  const cx1 = x1 + (x2-x1)*0.4;
+  const cy1 = y1;
+  const cx2 = x1 + (x2-x1)*0.6;
+  const cy2 = y2;
+  path.setAttribute('d',`M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}`);
+  path.setAttribute('fill','none');
+  path.setAttribute('stroke',color);
+  path.setAttribute('stroke-width','2');
+  path.setAttribute('stroke-opacity',opacity);
+  svg.appendChild(path);
+  return path;
+}
+
+let scale = 1, tx = 0, ty = 0;
+const BASE_OFFSET = { x: 0, y: 0 }; // will be computed
+
+// We draw lines after all nodes placed; store them by branch
+const branchLines = {};
+
+BRANCHES.forEach((b, bi) => {
+  const delay = 100 + bi * 80;
+
+  // Branch node
+  const bn = createNode({...b, type:'node-branch'}, delay);
+  bn.dataset.branchId = b.id;
+  if(b.detail) bn.dataset.hasDetail = '1';
+
+  // Leaves
+  b.leaves.forEach((l, li) => {
+    const ln = createNode({...l, type:'node-leaf'}, delay + 60 + li*40);
+    ln.dataset.leafBranch = b.id;
+    if(b.detail) ln.dataset.hasDetail = '1';
+    ln.dataset.leafIndex = li;
+  });
+});
+
+// Lines drawn in SVG (canvas-space, but SVG is positioned the same)
+// We'll draw after positioning and use the canvas offset
+function drawLines() {
+  svg.innerHTML = '';
+  const rect = canvas.getBoundingClientRect();
+  const areaRect = document.getElementById('canvas-area').getBoundingClientRect();
+  const ox = rect.left - areaRect.left;
+  const oy = rect.top  - areaRect.top;
+
+  function toScreen(x, y) {
+    return {
+      x: ox + x * scale,
+      y: oy + y * scale
+    };
+  }
+
+  // center center
+  const cc = nodeCenter(CENTER);
+  const csc = toScreen(cc.x, cc.y);
+
+  BRANCHES.forEach(b => {
+    const bc  = nodeCenter(b);
+    const bsc = toScreen(bc.x, bc.y);
+
+    // center → branch (thick curve)
+    const cp = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const mx = (csc.x + bsc.x)/2;
+    const my = (csc.y + bsc.y)/2;
+    const dx = bsc.x - csc.x, dy = bsc.y - csc.y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const nx = -dy/len * 40, ny = dx/len * 40;
+    cp.setAttribute('d',`M${csc.x},${csc.y} Q${mx+nx},${my+ny} ${bsc.x},${bsc.y}`);
+    cp.setAttribute('fill','none');
+    cp.setAttribute('stroke', b.color);
+    cp.setAttribute('stroke-width','2.5');
+    cp.setAttribute('stroke-opacity','0.5');
+    svg.appendChild(cp);
+
+    // branch → leaves
+    b.leaves.forEach(l => {
+      const lc  = nodeCenter(l);
+      const lsc = toScreen(lc.x, lc.y);
+      const lp = document.createElementNS('http://www.w3.org/2000/svg','line');
+      lp.setAttribute('x1',bsc.x); lp.setAttribute('y1',bsc.y);
+      lp.setAttribute('x2',lsc.x); lp.setAttribute('y2',lsc.y);
+      lp.setAttribute('stroke', b.color);
+      lp.setAttribute('stroke-width','1.5');
+      lp.setAttribute('stroke-opacity','0.3');
+      lp.setAttribute('stroke-dasharray','5 4');
+      svg.appendChild(lp);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────
+// PAN & ZOOM
+// ─────────────────────────────────────────────
+const area = document.getElementById('canvas-area');
+let isDragging = false, startX=0, startY=0, initTx=0, initTy=0;
+
+function applyTransform() {
+  canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  document.getElementById('zoom-reset').textContent = Math.round(scale*100)+'%';
+  drawLines();
+}
+
+function fitToScreen() {
+  const aw = area.clientWidth, ah = area.clientHeight;
+  // content bounds
+  const minX=500, minY=430, maxX=1820, maxY=1760;
+  const cw = maxX-minX, ch = maxY-minY;
+  scale = Math.min((aw-60)/cw, (ah-60)/ch, 1);
+  tx = (aw - cw*scale)/2 - minX*scale;
+  ty = (ah - ch*scale)/2 - minY*scale;
+  applyTransform();
+}
+
+// Initial fit
+setTimeout(() => { fitToScreen(); }, 100);
+
+area.addEventListener('mousedown', e => {
+  if(e.target.closest('.node') || e.target.closest('.ctrl-btn') || e.target.closest('#legend')) return;
+  isDragging = true;
+  startX = e.clientX; startY = e.clientY;
+  initTx = tx; initTy = ty;
+  area.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if(!isDragging) return;
+  tx = initTx + (e.clientX - startX);
+  ty = initTy + (e.clientY - startY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isDragging = false; area.style.cursor = 'grab'; });
+
+area.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = area.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const ns = Math.min(2, Math.max(0.3, scale * delta));
+  tx = mx - (mx - tx) * (ns/scale);
+  ty = my - (my - ty) * (ns/scale);
+  scale = ns;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById('zoom-in').addEventListener('click', () => {
+  const ns = Math.min(2, scale * 1.2);
+  const cx = area.clientWidth/2, cy = area.clientHeight/2;
+  tx = cx - (cx-tx)*(ns/scale); ty = cy - (cy-ty)*(ns/scale);
+  scale = ns; applyTransform();
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+  const ns = Math.max(0.3, scale / 1.2);
+  const cx = area.clientWidth/2, cy = area.clientHeight/2;
+  tx = cx - (cx-tx)*(ns/scale); ty = cy - (cy-ty)*(ns/scale);
+  scale = ns; applyTransform();
+});
+document.getElementById('zoom-reset').addEventListener('click', () => {
+  scale=1; tx = area.clientWidth/2 - CENTER.x - CENTER.w/2;
+  ty = area.clientHeight/2 - CENTER.y - CENTER.h/2;
+  applyTransform();
+});
+document.getElementById('fit-btn').addEventListener('click', fitToScreen);
+
+// ─────────────────────────────────────────────
+// PANEL DETAIL
+// ─────────────────────────────────────────────
+let activeNode = null;
+
+function openPanel(detail, color) {
+  document.getElementById('panel-default').style.display = 'none';
+  document.getElementById('panel-header').style.display = 'block';
+  document.getElementById('panel-body').style.display = 'block';
+  document.getElementById('panel-color-bar').style.background = color;
+  document.getElementById('panel-tag').textContent = detail.tag;
+  document.getElementById('panel-title').innerHTML = detail.icon + ' ' + detail.title;
+  document.getElementById('panel-subtitle').textContent = detail.subtitle;
+  document.getElementById('panel').classList.remove('collapsed');
+
+  const body = document.getElementById('panel-body');
+  body.innerHTML = '';
+
+  detail.sections.forEach(sec => {
+    const section = document.createElement('div');
+    section.className = 'panel-section';
+    section.innerHTML = `<div class="panel-section-label">${sec.label}</div>`;
+
+    if(sec.code) {
+      section.innerHTML += `<div class="code-block">${sec.code}</div>`;
+    } else {
+      sec.items.forEach(item => {
+        section.innerHTML += `
+          <div class="detail-item">
+            <div class="detail-item-title">${item.title}</div>
+            <div class="detail-item-desc">${item.desc}</div>
+          </div>`;
+      });
+    }
+    body.appendChild(section);
+  });
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.add('collapsed');
+  document.getElementById('panel-default').style.display = 'flex';
+  document.getElementById('panel-header').style.display = 'none';
+  document.getElementById('panel-body').style.display = 'none';
+  if(activeNode) { activeNode.classList.remove('active-node'); activeNode = null; }
+}
+
+document.getElementById('panel-close').addEventListener('click', closePanel);
+
+// Click nodes
+canvas.addEventListener('click', e => {
+  const node = e.target.closest('.node');
+  if(!node) return;
+  const bid = node.dataset.branchId || node.dataset.leafBranch;
+  if(!bid) return;
+  const branch = BRANCHES.find(b => b.id === bid);
+  if(!branch || !branch.detail) return;
+
+  if(activeNode) activeNode.classList.remove('active-node');
+  activeNode = node;
+  node.classList.add('active-node');
+  openPanel(branch.detail, branch.color);
+});
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+canvas.addEventListener('mousemove', e => {
+  const node = e.target.closest('.node');
+  if(node && (node.dataset.branchId || node.dataset.leafBranch)) {
+    tooltip.textContent = 'Klik untuk detail';
+    tooltip.classList.add('show');
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top  = (e.clientY - 28) + 'px';
+    area.classList.add('node-hover');
+  } else {
+    tooltip.classList.remove('show');
+    area.classList.remove('node-hover');
+  }
+});
+canvas.addEventListener('mouseleave', () => { tooltip.classList.remove('show'); });
+
+// Legend click: focus branch
+document.querySelectorAll('.legend-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const bid = item.dataset.branch;
+    const branch = BRANCHES.find(b => b.id === bid);
+    if(!branch) return;
+    const bc = nodeCenter(branch);
+    const aw = area.clientWidth, ah = area.clientHeight;
+    tx = aw/2 - bc.x*scale;
+    ty = ah/2 - bc.y*scale;
+    applyTransform();
+    const bEl = document.getElementById(bid);
+    if(bEl) { bEl.classList.add('active-node'); setTimeout(()=>bEl.classList.remove('active-node'),1500); }
+    openPanel(branch.detail, branch.color);
+  });
+});
+
+// Touch support
+let lastTouchDist = null;
+area.addEventListener('touchstart', e => {
+  if(e.touches.length === 1) {
+    isDragging = true;
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    initTx = tx; initTy = ty;
+  }
+}, { passive: true });
+area.addEventListener('touchmove', e => {
+  if(e.touches.length === 1 && isDragging) {
+    tx = initTx + (e.touches[0].clientX - startX);
+    ty = initTy + (e.touches[0].clientY - startY);
+    applyTransform();
+  } else if(e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    if(lastTouchDist) {
+      const delta = d / lastTouchDist;
+      scale = Math.min(2, Math.max(0.3, scale * delta));
+      applyTransform();
+    }
+    lastTouchDist = d;
+  }
+}, { passive: true });
+area.addEventListener('touchend', () => { isDragging = false; lastTouchDist = null; });
+
+// Resize
+window.addEventListener('resize', drawLines);
+</script>
+</body>
+</html>
